@@ -60,45 +60,59 @@ export async function POST(req: Request) {
   // CREATE
   if (eventType === "user.created") {
     const { id, email_addresses, image_url, first_name, last_name, username } = evt.data;
-
+  
+    // Ensure email_addresses has at least one element
+    const email = email_addresses?.[0]?.email_address || "";
+    
     const user = {
       clerkId: id,
-      email: email_addresses[0].email_address,
-      username: username!,
-      firstName: first_name,
-      lastName: last_name,
-      photo: image_url,
+      email: email,
+      username: username || "",
+      firstName: first_name || "",
+      lastName: last_name || "",
+      photo: image_url || "",
     };
-
-    const newUser = await createUser(user);
-
-    // Set public metadata
-    if (newUser) {
-      await clerkClient.users.updateUserMetadata(id, {
-        publicMetadata: {
-          userId: newUser._id,
-        },
-      });
+  
+    try {
+      const newUser = await createUser(user);
+  
+      // Set public metadata
+      if (newUser) {
+        await clerkClient.users.updateUserMetadata(id, {
+          publicMetadata: {
+            userId: newUser._id,
+          },
+        });
+      }
+  
+      return NextResponse.json({ message: "OK", user: newUser });
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return NextResponse.json({ message: "OK", user: createUser });
     }
-
-    return NextResponse.json({ message: "OK", user: newUser });
   }
+  
 
   // UPDATE
   if (eventType === "user.updated") {
     const { id, image_url, first_name, last_name, username } = evt.data;
-
+  
     const user = {
-      firstName: first_name,
-      lastName: last_name,
-      username: username!,
-      photo: image_url,
+      firstName: first_name || "",
+      lastName: last_name || "",
+      username: username || "",
+      photo: image_url || "",
     };
-
-    const updatedUser = await updateUser(id, user);
-
-    return NextResponse.json({ message: "OK", user: updatedUser });
+  
+    try {
+      const updatedUser = await updateUser(id, user);
+      return NextResponse.json({ message: "OK", user: updatedUser });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return NextResponse.json({ message: "OK", user: updateUser });
+    }
   }
+  
 
   // DELETE
   if (eventType === "user.deleted") {
